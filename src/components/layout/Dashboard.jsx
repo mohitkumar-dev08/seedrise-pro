@@ -7,43 +7,93 @@ import { useState, useEffect } from "react";
 export default function Dashboard({ data, onSurvive, onRelapse }) {
   const remainingDays = Math.max(0, data.goalDuration - data.currentStreak);
   
-  // ✅ Get gym data for days left
+  // ✅ Gym data
   const [gymDaysLeft, setGymDaysLeft] = useState(186);
   
-  // ✅ FIX: Function to load gym data
+  // ✅ Challenge 15 data
+  const [challengeStreak, setChallengeStreak] = useState(0);
+  const [challengeProgress, setChallengeProgress] = useState(0);
+  
+  // Load gym data
   const loadGymData = () => {
     const gymData = localStorage.getItem("gymTarget");
     if (gymData) {
       const parsed = JSON.parse(gymData);
       const daysLeft = parsed.totalDays - parsed.completedDays;
       setGymDaysLeft(daysLeft);
-      console.log('Dashboard gym days updated:', daysLeft); // Debug
+    }
+  };
+  
+  // Load challenge 15 data
+  const loadChallengeData = () => {
+    const saved = localStorage.getItem("challenge15");
+    if (saved) {
+      const data = JSON.parse(saved);
+      const today = new Date().toDateString();
+      const todayData = data[today];
+      const todayProgress = todayData?._progress || 0;
+      
+      setChallengeProgress(todayProgress);
+      
+      // Calculate streak
+      const todayCompleted = todayData?._completed > 0;
+      const completedDates = Object.keys(data)
+        .filter(date => {
+          const dayData = data[date];
+          return dayData && dayData._completed > 0;
+        })
+        .map(date => new Date(date).toDateString());
+      
+      if (!todayCompleted || completedDates.length === 0) {
+        setChallengeStreak(0);
+        return;
+      }
+      
+      let count = 0;
+      let checkDate = new Date(today);
+      
+      for (let i = 0; i < 15; i++) {
+        const dateStr = checkDate.toDateString();
+        if (completedDates.includes(dateStr)) {
+          count++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+      
+      setChallengeStreak(count);
     }
   };
   
   // Load on mount
   useEffect(() => {
     loadGymData();
+    loadChallengeData();
     
-    // ✅ FIX: Listen for storage events (when gym data changes in another tab)
+    // Listen for storage events
     const handleStorageChange = (e) => {
       if (e.key === 'gymTarget') {
         loadGymData();
+      }
+      if (e.key === 'challenge15') {
+        loadChallengeData();
       }
     };
     
     window.addEventListener('storage', handleStorageChange);
     
-    // ✅ FIX: Custom event listener for same-tab updates
-    const handleGymUpdate = () => {
-      loadGymData();
-    };
+    // Custom event listeners
+    const handleGymUpdate = () => loadGymData();
+    const handleChallengeUpdate = () => loadChallengeData();
     
     window.addEventListener('gymTargetUpdated', handleGymUpdate);
+    window.addEventListener('challenge15Updated', handleChallengeUpdate);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('gymTargetUpdated', handleGymUpdate);
+      window.removeEventListener('challenge15Updated', handleChallengeUpdate);
     };
   }, []);
 
@@ -96,43 +146,73 @@ export default function Dashboard({ data, onSurvive, onRelapse }) {
         </div>
       </div>
 
-      {/* ✅ 5 CARDS IN ONE ROW */}
-      <div className="feature-grid five-cards">
-        <Link to="/tracker" className="feature-card">
-          <span className="feature-icon">📊</span>
-          <h3>Tracker</h3>
-          <p>Main streak & progress</p>
-          <Plant streak={data.currentStreak} />
-        </Link>
+      {/* ✅ FEATURE GRID - ALL CARDS */}
+      <div className="feature-grid">
+        {/* Row 1: Main Features */}
+        <div className="feature-row">
+          <Link to="/tracker" className="feature-card">
+            <span className="feature-icon">📊</span>
+            <h3>Tracker</h3>
+            <p>Main streak & progress</p>
+            <Plant streak={data.currentStreak} />
+          </Link>
 
-        <Link to="/english" className="feature-card">
-          <span className="feature-icon">🇬🇧</span>
-          <h3>English</h3>
-          <p>Practice daily</p>
-          <Achievements streak={data.currentStreak} />
-        </Link>
+          <Link to="/english" className="feature-card">
+            <span className="feature-icon">🇬🇧</span>
+            <h3>English</h3>
+            <p>Practice daily</p>
+            <Achievements streak={data.currentStreak} />
+          </Link>
 
-        <Link to="/tasks" className="feature-card">
-          <span className="feature-icon">✅</span>
-          <h3>Tasks</h3>
-          <p>Daily checklist</p>
-        </Link>
-      { /* ✅ GYM TARGET CARD WITH CIRCLE COUNTDOWN */}
-        <Link to="/gym-target" className="feature-card gym-card">
-          <h3>Gym Target</h3>
-          <p>6 Month Journey</p>
-          <div className="countdown-circle">
-            <span className="circle-number">{gymDaysLeft}</span>
-            <span className="circle-label">DAYS LEFT</span>
-          </div>
-        </Link>
-        <Link to="/wellness" className="feature-card">
-          <span className="feature-icon">🧘</span>
-          <h3>Wellness</h3>
-          <p>Mood, sleep, journal</p>
-        </Link>
+          <Link to="/tasks" className="feature-card">
+            <span className="feature-icon">✅</span>
+            <h3>Tasks</h3>
+            <p>Daily checklist</p>
+          </Link>
 
-        
+          <Link to="/wellness" className="feature-card">
+            <span className="feature-icon">🧘</span>
+            <h3>Wellness</h3>
+            <p>Mood, sleep, journal</p>
+          </Link>
+        </div>
+
+        {/* Row 2: Gym & Challenge */}
+        <div className="feature-row secondary-row">
+          {/* Gym Target */}
+          <Link to="/gym-target" className="feature-card gym-card">
+            <span className="feature-icon">💪</span>
+            <h3>Gym Target</h3>
+            <p>6 Month Journey</p>
+            <div className="countdown-circle">
+              <span className="circle-number">{gymDaysLeft}</span>
+              <span className="circle-label">DAYS LEFT</span>
+            </div>
+          </Link>
+
+          {/* 15 Day Challenge */}
+          <Link to="/challenge-15" className="feature-card challenge-card">
+            <span className="feature-icon">⚡</span>
+            <h3>15 Day Challenge</h3>
+            <p>Transform yourself</p>
+            <div className="challenge-mini-progress">
+              <div className="mini-progress-bar">
+                <div 
+                  className="mini-progress-fill" 
+                  style={{ width: `${challengeProgress}%` }}
+                />
+              </div>
+              <span className="mini-streak">🔥 {challengeStreak}/15</span>
+            </div>
+          </Link>
+
+          {/* AI Coach */}
+          <Link to="/ai-coach" className="feature-card ai-card">
+            <span className="feature-icon">🤖</span>
+            <h3>AI Coach</h3>
+            <p>Personal guidance</p>
+          </Link>
+        </div>
       </div>
     </div>
   );

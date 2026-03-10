@@ -229,6 +229,18 @@ function DashboardPage({ data, onSurvive, onRelapse }) {
             <span className="circle-label">DAYS LEFT</span>
           </div>
         </Link>
+        {/* ✅ 15 Day Challenge - NEW CARD */}
+  <Link to="/challenge-15" className="feature-card challenge-card">
+    <span className="feature-icon">⚡</span>
+    <h3>15 Day Challenge</h3>
+    <p>Transform yourself</p>
+    <div className="challenge-mini-progress">
+      <div className="mini-progress-bar">
+        <div className="mini-progress-fill" style={{ width: '0%' }} />
+      </div>
+      <span className="mini-streak">🔥 0/15</span>
+    </div>
+  </Link>
       </div>
     </div>
   );

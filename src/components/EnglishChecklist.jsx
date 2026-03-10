@@ -67,7 +67,6 @@ export default function EnglishChecklist({ streak, onStreakUpdate }) {
   
   const [expandedTask, setExpandedTask] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
-  // ✅ Export format state
   const [exportFormat, setExportFormat] = useState("json");
   
   const dayType = getDayType();
@@ -90,7 +89,7 @@ export default function EnglishChecklist({ streak, onStreakUpdate }) {
   const completedCount = Object.entries(todaysChecks)
     .filter(([key, value]) => !key.startsWith('_') && value === true)
     .length;
-  const progressPercent = Math.round((completedCount / totalTasks) * 100) || 0;
+  const progressPercent = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
   
   // Save daily progress to history
   useEffect(() => {
@@ -111,59 +110,61 @@ export default function EnglishChecklist({ streak, onStreakUpdate }) {
         return updated;
       });
     }
-  }, [completedCount, todayStr]);
+  }, [completedCount, progressPercent, todayStr, dayType, totalTasks]);
   
-  // Calculate English Streak
-// EnglishChecklist.jsx mein calculateEnglishStreak function replace karo:
-
-// EnglishChecklist mein yeh function replace kar:
-const calculateEnglishStreak = () => {
-  // 1. Saare completed dates nikaalo (jinme koi task true ho)
-  const completedDates = Object.keys(checks)
-    .filter(date => {
-      const dayData = checks[date];
-      return dayData && Object.entries(dayData)
-        .some(([key, value]) => !key.startsWith('_') && value === true);
-    })
-    .map(date => new Date(date).toDateString()); // Normalize
-  
-  if (completedDates.length === 0) return 0;
-  
-  // 2. Aaj ki date
-  const today = new Date().toDateString();
-  
-  // 3. Sabse recent completed date dhundo
-  const sortedDates = [...completedDates].sort((a, b) => 
-    new Date(b) - new Date(a)
-  );
-  
-  // 4. Streak count karo (consecutive days from most recent)
-  let streak = 1;
-  let currentDate = new Date(sortedDates[0]);
-  
-  for (let i = 1; i < sortedDates.length; i++) {
-    const prevDate = new Date(currentDate);
-    prevDate.setDate(prevDate.getDate() - 1);
-    const prevDateStr = prevDate.toDateString();
+  // Calculate English Streak - FIXED
+  const calculateEnglishStreak = () => {
+    // Saare completed dates nikaalo (jinme koi task true ho)
+    const completedDates = Object.keys(checks)
+      .filter(date => {
+        const dayData = checks[date];
+        return dayData && Object.entries(dayData)
+          .some(([key, value]) => !key.startsWith('_') && value === true);
+      })
+      .map(date => new Date(date).toDateString()); // Normalize
     
-    if (sortedDates.includes(prevDateStr)) {
-      streak++;
-      currentDate = prevDate;
-    } else {
-      break;
+    if (completedDates.length === 0) return 0;
+    
+    // Aaj ki date
+    const today = new Date().toDateString();
+    
+    // Check if today is completed
+    const todayCompleted = completedDates.includes(today);
+    if (!todayCompleted) return 0;
+    
+    // Sabse recent completed date dhundo (today)
+    const sortedDates = [...completedDates].sort((a, b) => 
+      new Date(b) - new Date(a)
+    );
+    
+    // Streak count karo (consecutive days from today)
+    let streak = 1;
+    let currentDate = new Date(today);
+    
+    for (let i = 1; i < sortedDates.length; i++) {
+      const prevDate = new Date(currentDate);
+      prevDate.setDate(prevDate.getDate() - 1);
+      const prevDateStr = prevDate.toDateString();
+      
+      if (completedDates.includes(prevDateStr)) {
+        streak++;
+        currentDate = prevDate;
+      } else {
+        break;
+      }
     }
-  }
+    
+    return streak;
+  };
   
-  return streak;
-};
+  const englishStreak = calculateEnglishStreak();
   
-  // Update streak
+  // Update streak in parent
   useEffect(() => {
-    const englishStreak = calculateEnglishStreak();
     if (onStreakUpdate) {
       onStreakUpdate(englishStreak);
     }
-  }, [checks]);
+  }, [englishStreak, onStreakUpdate]);
   
   const toggleCheck = (taskId) => {
     setChecks(prev => {
@@ -190,7 +191,7 @@ const calculateEnglishStreak = () => {
     }
   };
   
-  // ✅ EXPORT FUNCTION - Today's data
+  // EXPORT FUNCTION - Today's data
   const exportToday = () => {
     if (!checks[todayStr]) {
       alert("No data for today to export!");
@@ -201,7 +202,9 @@ const calculateEnglishStreak = () => {
       date: todayStr,
       dayType: dayType,
       tasks: tasks.map(t => ({
-        ...t,
+        id: t.id,
+        short: t.short,
+        full: t.full,
         completed: todaysChecks[t.id] || false
       })),
       progress: {
@@ -210,7 +213,7 @@ const calculateEnglishStreak = () => {
         percentage: progressPercent
       },
       tongueTwister: tongueTwister.text,
-      streak: calculateEnglishStreak()
+      streak: englishStreak
     };
     
     const filename = `english_checklist_${todayStr.replace(/ /g, "_")}`;
@@ -231,15 +234,17 @@ const calculateEnglishStreak = () => {
         const csv = formatAsCSV(todayData);
         exportService.downloadFile(csv, `${filename}.csv`, "text/csv");
         break;
+      default:
+        break;
     }
   };
   
-  // ✅ EXPORT FUNCTION - All history
+  // EXPORT FUNCTION - All history
   const exportAll = () => {
     const allData = {
       exportDate: new Date().toISOString(),
       totalDays: Object.keys(checks).length,
-      currentStreak: calculateEnglishStreak(),
+      currentStreak: englishStreak,
       data: Object.entries(checks)
         .filter(([_, value]) => value._progress !== undefined)
         .sort((a, b) => new Date(b[0]) - new Date(a[0]))
@@ -260,7 +265,7 @@ const calculateEnglishStreak = () => {
     );
   };
   
-  // ✅ Format as Text
+  // Format as Text
   const formatAsText = (data) => {
     let text = `ENGLISH PRACTICE CHECKLIST\n`;
     text += `========================\n`;
@@ -276,7 +281,7 @@ const calculateEnglishStreak = () => {
     return text;
   };
   
-  // ✅ Format as CSV
+  // Format as CSV
   const formatAsCSV = (data) => {
     let csv = "Task ID,Task Name,Completed\n";
     data.tasks.forEach(t => {
@@ -286,17 +291,17 @@ const calculateEnglishStreak = () => {
   };
   
   // Get progress history - LAST 7 DAYS (excluding today)
-const progressHistory = Object.entries(checks)
-  .filter(([date]) => date !== todayStr && checks[date]?._progress !== undefined)  // ✅ Today excluded
-  .sort((a, b) => new Date(b[0]) - new Date(a[0]))
-  .slice(0, 7)
-  .map(([date, data]) => ({
-    date,
-    progress: data._progress || 0,
-    completed: data._completed || 0,
-    total: data._total || totalTasks,
-    dayType: data._dayType || 'unknown'
-  }));
+  const progressHistory = Object.entries(checks)
+    .filter(([date]) => date !== todayStr && checks[date]?._progress !== undefined)
+    .sort((a, b) => new Date(b[0]) - new Date(a[0]))
+    .slice(0, 7)
+    .map(([date, data]) => ({
+      date,
+      progress: data._progress || 0,
+      completed: data._completed || 0,
+      total: data._total || totalTasks,
+      dayType: data._dayType || 'unknown'
+    }));
   
   return (
     <div className="english-checklist-card">
@@ -312,7 +317,7 @@ const progressHistory = Object.entries(checks)
         </div>
       </div>
       
-      {/* ✅ EXPORT SECTION - Journal jaisa */}
+      {/* EXPORT SECTION */}
       <div className="export-section">
         <div className="export-buttons">
           <button 
@@ -433,7 +438,7 @@ const progressHistory = Object.entries(checks)
           🔄 Reset Today
         </button>
         <span className="streak-badge-small">
-          🔥 English Streak: {calculateEnglishStreak()} days
+          🔥 English Streak: {englishStreak} days
         </span>
       </div>
     </div>
