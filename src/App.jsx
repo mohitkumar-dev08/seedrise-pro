@@ -18,7 +18,7 @@ import TodoList from "./components/TodoList";
 import GymTarget from "./components/GymTarget";
 import confetti from "canvas-confetti";
 import "./App.css";
-
+import Days15Challenge from "./components/15DaysChallenge";
 const todayString = () => new Date().toDateString();
 
 const defaultData = {
@@ -53,6 +53,7 @@ function Navbar({ streak, darkMode, toggleDarkMode }) {
     { path: "/wellness", name: "Wellness", icon: "🧘" },
     { path: "/gym-target", name: "Gym", icon: "💪" },
     { path: "/ai-coach", name: "AI Coach", icon: "🤖" },
+    { path: "/challenge-15", name: "15 Day", icon: "⚡" },
   ];
 
   return (
@@ -449,6 +450,7 @@ function App() {
             <Route path="/wellness" element={<WellnessPage streak={data.currentStreak} />} />
             <Route path="/gym-target" element={<GymTargetPage />} />
             <Route path="/ai-coach" element={<AICoachPage streak={data.currentStreak} justRelapsed={justRelapsed} />} />
+            <Route path="/challenge-15" element={<Days15Challenge />} />
           </Routes>
         </main>
 
