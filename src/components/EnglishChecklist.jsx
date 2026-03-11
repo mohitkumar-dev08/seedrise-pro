@@ -20,7 +20,8 @@ const DAY1_TASKS = [
   { id: "d1_friends", short: "📺 Friends (No repeat)", full: "Watch Friends episode - shadowing technique (no repeat)" },
   { id: "d1_gemini", short: "🤖 Client Simulation", full: "Real Life Situation/Client Meeting Simulation with Gemini AI (Feedback + improved version)" },
   { id: "d1_speak", short: "🎤 3min Topic + Record", full: "Speak on One Topic (3 min) - Record yourself. Compare weekly progress" },
-  { id: "d1_ted", short: "🎯 TED 1min + Repeat", full: "Listen TED channel (1 min) - repeat with body language, record final perfect part" }
+  { id: "d1_ted", short: "🎯 TED 1min + Repeat", full: "Listen TED channel (1 min) - repeat with body language, record final perfect part" },
+  { id: "d2_gemini_practice", short: "🤖 Gemini (20 min)", full: "Gemini English Practice on any conversation topic or normal talk" }
 ];
 
 const DAY2_TASKS = [
@@ -33,7 +34,8 @@ const DAY2_TASKS = [
   { id: "d2_interview", short: "💼 Interview Practice", full: "Interview Question Practice Tech/HR with Gemini based on my CV" },
   { id: "d2_ppt", short: "📽️ Presentation Practice", full: "Presentation Practice: write script → read with script → without script" },
   { id: "d2_explain", short: "🔧 Project Explain", full: "Project/Work Explain: Explain daily one code/project/CV in English" },
-  { id: "d2_intro", short: "👤 Who am I?", full: "Introduce yourself - Write script and practice with recording" }
+  { id: "d2_intro", short: "👤 Who am I?", full: "Introduce yourself - Write script and practice with recording" },
+  { id: "d1_gemini_practice", short: "🤖 Gemini (20 min)", full: "Gemini English Practice on any conversation topic or normal talk" }
 ];
 
 const SUNDAY_TASKS = [
