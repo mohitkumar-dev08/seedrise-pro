@@ -10,9 +10,12 @@ export default function Dashboard({ data, onSurvive, onRelapse }) {
   // ✅ Gym data
   const [gymDaysLeft, setGymDaysLeft] = useState(186);
   
-  // ✅ Challenge 15 data
+  // ✅ Challenge 13 data
   const [challengeStreak, setChallengeStreak] = useState(0);
   const [challengeProgress, setChallengeProgress] = useState(0);
+  
+  // ✅ Force re-render key
+  const [updateKey, setUpdateKey] = useState(0);
   
   // Load gym data
   const loadGymData = () => {
@@ -24,45 +27,69 @@ export default function Dashboard({ data, onSurvive, onRelapse }) {
     }
   };
   
-  // Load challenge 15 data
+  // Load challenge 13 data
   const loadChallengeData = () => {
-    const saved = localStorage.getItem("challenge15");
+    const saved = localStorage.getItem("challenge13");
     if (saved) {
       const data = JSON.parse(saved);
       const today = new Date().toDateString();
       const todayData = data[today];
-      const todayProgress = todayData?._progress || 0;
+      
+      // Calculate today's progress
+      let todayProgress = 0;
+      let todayCompleted = false;
+      
+      if (todayData) {
+        // Count completed tasks for today
+        const completedTasks = Object.keys(todayData)
+          .filter(key => !key.startsWith('_') && todayData[key] === true)
+          .length;
+        
+        todayProgress = Math.round((completedTasks / 24) * 100) || 0;
+        todayCompleted = completedTasks > 0;
+      }
       
       setChallengeProgress(todayProgress);
       
-      // Calculate streak
-      const todayCompleted = todayData?._completed > 0;
+      // Get all dates with completed tasks
       const completedDates = Object.keys(data)
         .filter(date => {
           const dayData = data[date];
-          return dayData && dayData._completed > 0;
+          if (!dayData) return false;
+          
+          const taskCount = Object.keys(dayData)
+            .filter(key => !key.startsWith('_') && dayData[key] === true)
+            .length;
+          
+          return taskCount > 0;
         })
         .map(date => new Date(date).toDateString());
       
+      // If today not completed, streak is 0
       if (!todayCompleted || completedDates.length === 0) {
         setChallengeStreak(0);
         return;
       }
       
-      let count = 0;
+      // Calculate streak - start from today
+      let count = 1;
       let checkDate = new Date(today);
       
-      for (let i = 0; i < 15; i++) {
+      for (let i = 1; i < 13; i++) {
+        checkDate.setDate(checkDate.getDate() - 1);
         const dateStr = checkDate.toDateString();
+        
         if (completedDates.includes(dateStr)) {
           count++;
-          checkDate.setDate(checkDate.getDate() - 1);
         } else {
           break;
         }
       }
       
       setChallengeStreak(count);
+    } else {
+      setChallengeStreak(0);
+      setChallengeProgress(0);
     }
   };
   
@@ -76,8 +103,10 @@ export default function Dashboard({ data, onSurvive, onRelapse }) {
       if (e.key === 'gymTarget') {
         loadGymData();
       }
-      if (e.key === 'challenge15') {
+      if (e.key === 'challenge13') {
         loadChallengeData();
+        // ✅ Force re-render
+        setUpdateKey(prev => prev + 1);
       }
     };
     
@@ -85,15 +114,20 @@ export default function Dashboard({ data, onSurvive, onRelapse }) {
     
     // Custom event listeners
     const handleGymUpdate = () => loadGymData();
-    const handleChallengeUpdate = () => loadChallengeData();
+    const handleChallengeUpdate = () => {
+      console.log("Challenge update received!");
+      loadChallengeData();
+      // ✅ Force re-render
+      setUpdateKey(prev => prev + 1);
+    };
     
     window.addEventListener('gymTargetUpdated', handleGymUpdate);
-    window.addEventListener('challenge15Updated', handleChallengeUpdate);
+    window.addEventListener('challenge13Updated', handleChallengeUpdate);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('gymTargetUpdated', handleGymUpdate);
-      window.removeEventListener('challenge15Updated', handleChallengeUpdate);
+      window.removeEventListener('challenge13Updated', handleChallengeUpdate);
     };
   }, []);
 
@@ -146,8 +180,8 @@ export default function Dashboard({ data, onSurvive, onRelapse }) {
         </div>
       </div>
 
-      {/* ✅ FEATURE GRID - ALL CARDS */}
-      <div className="feature-grid">
+      {/* FEATURE GRID - with key for force update */}
+      <div className="feature-grid" key={updateKey}>
         {/* Row 1: Main Features */}
         <div className="feature-row">
           <Link to="/tracker" className="feature-card">
@@ -190,10 +224,10 @@ export default function Dashboard({ data, onSurvive, onRelapse }) {
             </div>
           </Link>
 
-          {/* 15 Day Challenge */}
-          <Link to="/challenge-15" className="feature-card challenge-card">
+          {/* 13 Day Challenge */}
+          <Link to="/challenge-13" className="feature-card challenge-card">
             <span className="feature-icon">⚡</span>
-            <h3>15 Day Challenge</h3>
+            <h3>13 Day Challenge</h3>
             <p>Transform yourself</p>
             <div className="challenge-mini-progress">
               <div className="mini-progress-bar">
@@ -202,7 +236,7 @@ export default function Dashboard({ data, onSurvive, onRelapse }) {
                   style={{ width: `${challengeProgress}%` }}
                 />
               </div>
-              <span className="mini-streak">🔥 {challengeStreak}/15</span>
+              <span className="mini-streak">🔥 {challengeStreak}/13</span>
             </div>
           </Link>
 

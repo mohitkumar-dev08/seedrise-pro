@@ -1,10 +1,20 @@
-export default function ChallengeAchievements({ streak }) {
-  const milestones = [3, 7, 10, 15];
+// components/ChallengeAchievements.jsx
+export default function ChallengeAchievements({ streak, totalDays = 13 }) {
+  // ✅ Dynamic milestones according to totalDays
+  const getMilestones = () => {
+    if (totalDays === 13) {
+      return [3, 7, 10, 13];
+    }
+    return [3, 7, 10, 15]; // default
+  };
+  
+  const milestones = getMilestones();
   
   const badgeDetails = {
     3: { emoji: "🌱", name: "Starter", desc: "3 days - Journey begins" },
     7: { emoji: "🌿", name: "Consistent", desc: "7 days - One week strong" },
     10: { emoji: "🌲", name: "Warrior", desc: "10 days - Almost there" },
+    13: { emoji: "🏆", name: "Champion", desc: "13 days - Challenge Complete!" },
     15: { emoji: "🏆", name: "Champion", desc: "15 days - Challenge Complete!" }
   };
 
@@ -18,7 +28,7 @@ export default function ChallengeAchievements({ streak }) {
       <div className="milestone-grid">
         {milestones.map((milestone) => {
           const unlocked = streak >= milestone;
-          const details = badgeDetails[milestone];
+          const details = badgeDetails[milestone] || { emoji: "🏆", name: `${milestone}d` };
           
           return (
             <div
@@ -34,8 +44,8 @@ export default function ChallengeAchievements({ streak }) {
       </div>
 
       <div className="milestone-progress-text">
-        <span>{streak}/15 days</span>
-        <span>{Math.round((streak/15)*100)}%</span>
+        <span>{streak}/{totalDays} days</span>
+        <span>{Math.round((streak/totalDays)*100)}%</span>
       </div>
     </div>
   );

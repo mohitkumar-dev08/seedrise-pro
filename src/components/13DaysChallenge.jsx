@@ -16,7 +16,7 @@ const CATEGORY_TABS = [
   { id: "diet", name: "Diet", emoji: "🥗", count: 10 }
 ];
 
-export default function Days15Challenge() {
+export default function Days13Challenge() {
   const [streak, setStreak] = useState(0);
   const [todayProgress, setTodayProgress] = useState(0);
   const [completedToday, setCompletedToday] = useState(0);
@@ -25,71 +25,113 @@ export default function Days15Challenge() {
 
   // Load streak from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("challenge15");
+    const saved = localStorage.getItem("challenge13");
     if (saved) {
       const data = JSON.parse(saved);
       
-      // Calculate streak (consecutive days with >0 progress)
-      const dates = Object.keys(data)
+      // Aaj ki date
+      const today = new Date().toDateString();
+      const todayData = data[today];
+      
+      // ✅ Check if today has any completed tasks
+      let todayCompleted = false;
+      let todayTaskCount = 0;
+      
+      if (todayData) {
+        // Count tasks that are true (not starting with _)
+        todayTaskCount = Object.keys(todayData)
+          .filter(key => !key.startsWith('_') && todayData[key] === true)
+          .length;
+        
+        if (todayTaskCount > 0) {
+          todayCompleted = true;
+        }
+      }
+      
+      // Get all dates with completed tasks
+      const completedDates = Object.keys(data)
         .filter(date => {
           const dayData = data[date];
-          return dayData && dayData._completed > 0;
+          if (!dayData) return false;
+          
+          // Count completed tasks for this day
+          const taskCount = Object.keys(dayData)
+            .filter(key => !key.startsWith('_') && dayData[key] === true)
+            .length;
+          
+          return taskCount > 0;
         })
         .map(date => new Date(date).toDateString());
       
-      if (dates.length === 0) {
+      console.log('Completed dates:', completedDates);
+      console.log('Today completed:', todayCompleted);
+      console.log('Today task count:', todayTaskCount);
+      
+      // Agar aaj kuch complete nahi kiya to streak 0
+      if (!todayCompleted) {
         setStreak(0);
         return;
       }
       
-      // Check if today is done
-      const today = new Date().toDateString();
-      const todayDone = dates.includes(today);
-      
-      // Calculate streak
-      let count = todayDone ? 1 : 0;
+      // Streak count karo - TODAY SE START
+      let count = 1;  // Aaj complete hai to 1 se start
       let checkDate = new Date(today);
       
-      for (let i = 1; i < 15; i++) {
+      for (let i = 1; i < 13; i++) {
         checkDate.setDate(checkDate.getDate() - 1);
         const dateStr = checkDate.toDateString();
         
-        if (dates.includes(dateStr)) {
-          count++;
+        if (completedDates.includes(dateStr)) {
+          count++;  // Kal bhi kiya tha to streak badhao
         } else {
-          break;
+          break;  // Gap mila to ruk jao
         }
       }
       
+      console.log('Calculated streak:', count);
       setStreak(count);
     }
   }, [todayProgress]);
 
   // Get history for last 7 days
   const getHistory = () => {
-    const saved = localStorage.getItem("challenge15");
+    const saved = localStorage.getItem("challenge13");
     if (!saved) return [];
     
     const data = JSON.parse(saved);
     return Object.entries(data)
-      .filter(([_, val]) => val._progress !== undefined)
+      .filter(([_, val]) => {
+        // Check if this date has any completed tasks
+        const taskCount = Object.keys(val)
+          .filter(key => !key.startsWith('_') && val[key] === true)
+          .length;
+        return taskCount > 0;
+      })
       .sort((a, b) => new Date(b[0]) - new Date(a[0]))
       .slice(0, 7)
-      .map(([date, val]) => ({
-        date,
-        progress: val._progress,
-        completed: val._completed,
-        total: val._total
-      }));
+      .map(([date, val]) => {
+        const taskCount = Object.keys(val)
+          .filter(key => !key.startsWith('_') && val[key] === true)
+          .length;
+        const totalTasks = 24; // Total tasks
+        const progress = Math.round((taskCount / totalTasks) * 100);
+        
+        return {
+          date,
+          progress: progress,
+          completed: taskCount,
+          total: totalTasks
+        };
+      });
   };
 
   const history = getHistory();
 
   return (
-    <div className="challenge-15-page">
+    <div className="challenge-15-page"> {/* Class name same rakha for CSS compatibility */}
       {/* Header */}
       <div className="challenge-header">
-        <h1>⚡ 15 DAYS TRANSFORMATION ⚡</h1>
+        <h1>⚡ 13 DAYS TRANSFORMATION ⚡</h1>
         <p className="challenge-subtitle">Complete daily tasks to grow stronger</p>
       </div>
 
@@ -97,8 +139,8 @@ export default function Days15Challenge() {
       <div className="challenge-grid">
         {/* Left Column - Plant & Achievements */}
         <div className="challenge-left">
-          <ChallengePlant streak={streak} />
-          <ChallengeAchievements streak={streak} />
+          <ChallengePlant streak={streak} totalDays={13} /> {/* ✅ Pass totalDays prop */}
+          <ChallengeAchievements streak={streak} totalDays={13} /> {/* ✅ Pass totalDays prop */}
           
           {/* Daily Quote */}
           <div className="challenge-quote-card">
@@ -109,7 +151,7 @@ export default function Days15Challenge() {
               {streak === 3 && "3 days strong! Building habits."}
               {streak === 7 && "One week! You're unstoppable!"}
               {streak === 10 && "10 days! Almost there!"}
-              {streak === 15 && "🎉 CHAMPION! You did it! 🎉"}
+              {streak === 13 && "🎉 CHAMPION! You did it! 🎉"}
             </p>
           </div>
         </div>
@@ -178,7 +220,7 @@ export default function Days15Challenge() {
             </div>
             <div className="summary-card">
               <span className="summary-label-modern">Current Streak</span>
-              <span className="summary-value-modern">🔥 {streak}</span>
+              <span className="summary-value-modern">🔥 {streak}/13</span>
             </div>
           </div>
 

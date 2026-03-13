@@ -1,4 +1,4 @@
-// App.jsx - FULLY FIXED VERSION
+// App.jsx - FINAL FIXED VERSION
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
 import Plant from "./components/Plant";
@@ -18,7 +18,8 @@ import TodoList from "./components/TodoList";
 import GymTarget from "./components/GymTarget";
 import confetti from "canvas-confetti";
 import "./App.css";
-import Days15Challenge from "./components/15DaysChallenge";
+import Days13Challenge from "./components/13DaysChallenge";
+
 const todayString = () => new Date().toDateString();
 
 const defaultData = {
@@ -53,7 +54,7 @@ function Navbar({ streak, darkMode, toggleDarkMode }) {
     { path: "/wellness", name: "Wellness", icon: "🧘" },
     { path: "/gym-target", name: "Gym", icon: "💪" },
     { path: "/ai-coach", name: "AI Coach", icon: "🤖" },
-    { path: "/challenge-15", name: "15 Day", icon: "⚡" },
+    { path: "/challenge-13", name: "13 Day", icon: "⚡" },
   ];
 
   return (
@@ -123,14 +124,18 @@ function Footer() {
   );
 }
 
-// ✅ FIXED: Dashboard Page with dynamic gym days
+// ✅ FIXED: Dashboard Page with dynamic gym days AND challenge 13
 function DashboardPage({ data, onSurvive, onRelapse }) {
   const remainingDays = Math.max(0, data.goalDuration - data.currentStreak);
   
-  // ✅ ADDED: State for gym days
+  // ✅ Gym data
   const [gymDaysLeft, setGymDaysLeft] = useState(186);
   
-  // ✅ ADDED: Function to load gym data
+  // ✅ Challenge 13 data - ADDED
+  const [challengeStreak, setChallengeStreak] = useState(0);
+  const [challengeProgress, setChallengeProgress] = useState(0);
+  
+  // Load gym data
   const loadGymData = () => {
     const gymData = localStorage.getItem("gymTarget");
     if (gymData) {
@@ -141,22 +146,83 @@ function DashboardPage({ data, onSurvive, onRelapse }) {
     }
   };
   
-  // ✅ ADDED: useEffect with listeners
+  // ✅ Load challenge 13 data - ADDED
+  const loadChallengeData = () => {
+    const saved = localStorage.getItem("challenge13");
+    if (saved) {
+      const data = JSON.parse(saved);
+      const today = new Date().toDateString();
+      const todayData = data[today];
+      
+      // Calculate progress
+      let todayProgress = 0;
+      if (todayData) {
+        const completedTasks = Object.keys(todayData)
+          .filter(key => !key.startsWith('_') && todayData[key] === true)
+          .length;
+        todayProgress = Math.round((completedTasks / 24) * 100) || 0;
+      }
+      setChallengeProgress(todayProgress);
+      
+      // Calculate streak
+      const completedDates = Object.keys(data)
+        .filter(date => {
+          const dayData = data[date];
+          if (!dayData) return false;
+          const taskCount = Object.keys(dayData)
+            .filter(key => !key.startsWith('_') && dayData[key] === true)
+            .length;
+          return taskCount > 0;
+        })
+        .map(date => new Date(date).toDateString());
+      
+      const todayCompleted = completedDates.includes(today);
+      
+      if (!todayCompleted) {
+        setChallengeStreak(0);
+        return;
+      }
+      
+      let count = 1;
+      let checkDate = new Date(today);
+      for (let i = 1; i < 13; i++) {
+        checkDate.setDate(checkDate.getDate() - 1);
+        if (completedDates.includes(checkDate.toDateString())) {
+          count++;
+        } else {
+          break;
+        }
+      }
+      setChallengeStreak(count);
+      console.log('Challenge streak loaded:', count);
+    } else {
+      setChallengeStreak(0);
+      setChallengeProgress(0);
+    }
+  };
+  
+  // ✅ useEffect with all listeners - FIXED
   useEffect(() => {
     loadGymData();
+    loadChallengeData();
     
     const handleStorageChange = (e) => {
       if (e.key === 'gymTarget') {
         loadGymData();
       }
+      if (e.key === 'challenge13') {
+        loadChallengeData();
+      }
     };
     
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('gymTargetUpdated', loadGymData);
+    window.addEventListener('challenge13Updated', loadChallengeData);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('gymTargetUpdated', loadGymData);
+      window.removeEventListener('challenge13Updated', loadChallengeData);
     };
   }, []);
 
@@ -198,29 +264,32 @@ function DashboardPage({ data, onSurvive, onRelapse }) {
         <button onClick={onRelapse} className="relapse-btn-large">⚠️ Relapse</button>
       </div>
 
-      <div className="feature-grid">
+      <div className="feature-grid six-cards"> {/* ✅ Added six-cards class */}
         <Link to="/tracker" className="feature-card">
           <span className="feature-icon">📊</span>
           <h3>Tracker</h3>
           <p>Main streak & progress</p>
         </Link>
+        
         <Link to="/english" className="feature-card">
           <span className="feature-icon">🇬🇧</span>
           <h3>English</h3>
           <p>Practice daily</p>
         </Link>
+        
         <Link to="/tasks" className="feature-card">
           <span className="feature-icon">✅</span>
           <h3>Tasks</h3>
           <p>Daily checklist</p>
         </Link>
+        
         <Link to="/wellness" className="feature-card">
           <span className="feature-icon">🧘</span>
           <h3>Wellness</h3>
           <p>Mood, sleep, journal</p>
         </Link>
         
-        {/* ✅ FIXED: Gym Target with dynamic number */}
+        {/* ✅ Gym Target */}
         <Link to="/gym-target" className="feature-card gym-card">
           <h3>Gym Target</h3>
           <p>6 Month Journey</p>
@@ -229,18 +298,21 @@ function DashboardPage({ data, onSurvive, onRelapse }) {
             <span className="circle-label">DAYS LEFT</span>
           </div>
         </Link>
-        {/* ✅ 15 Day Challenge - NEW CARD */}
-  <Link to="/challenge-15" className="feature-card challenge-card">
-    <span className="feature-icon">⚡</span>
-    <h3>15 Day Challenge</h3>
-    <p>Transform yourself</p>
-    <div className="challenge-mini-progress">
-      <div className="mini-progress-bar">
-        <div className="mini-progress-fill" style={{ width: '0%' }} />
-      </div>
-      <span className="mini-streak">🔥 0/15</span>
-    </div>
-  </Link>
+        
+        {/* ✅ 13 Day Challenge - WITH REAL DATA */}
+        <Link to="/challenge-13" className="feature-card challenge-card">
+          <h3>13 Day Challenge</h3>
+          <p>Transform yourself</p>
+          <div className="challenge-mini-progress">
+            <div className="mini-progress-bar">
+              <div 
+                className="mini-progress-fill" 
+                style={{ width: `${challengeProgress}%` }}
+              />
+            </div>
+            <span className="mini-streak">🔥 {challengeStreak}/13</span>
+          </div>
+        </Link>
       </div>
     </div>
   );
@@ -252,7 +324,6 @@ function TrackerPage({ data, onSurvive, onRelapse, message, showModal, setShowMo
   const milestones = [3, 7, 30, 90];
   const nextMilestone = milestones.find(m => m > data.currentStreak) || null;
   const progressPercent = nextMilestone ? (data.currentStreak / nextMilestone) * 100 : 100;
-  const [currentMonthYear] = useState(getMonthYear());
   
   const [rightTab, setRightTab] = useState("calendar");
 
@@ -331,7 +402,7 @@ function TrackerPage({ data, onSurvive, onRelapse, message, showModal, setShowMo
   );
 }
 
-// ✅ NEW: Gym Target Page
+// Gym Target Page
 function GymTargetPage() {
   return (
     <div className="gym-target-page">
@@ -462,7 +533,7 @@ function App() {
             <Route path="/wellness" element={<WellnessPage streak={data.currentStreak} />} />
             <Route path="/gym-target" element={<GymTargetPage />} />
             <Route path="/ai-coach" element={<AICoachPage streak={data.currentStreak} justRelapsed={justRelapsed} />} />
-            <Route path="/challenge-15" element={<Days15Challenge />} />
+            <Route path="/challenge-13" element={<Days13Challenge />} />
           </Routes>
         </main>
 

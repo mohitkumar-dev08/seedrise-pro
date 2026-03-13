@@ -45,7 +45,8 @@ const TASKS = [
 export default function ChallengeChecklist({ activeTab = "all", onProgressUpdate }) {
   const todayStr = new Date().toDateString();
   const [checks, setChecks] = useState(() => {
-    const saved = localStorage.getItem("challenge15");
+    // ✅ FIXED: challenge13 use karo
+    const saved = localStorage.getItem("challenge13");
     return saved ? JSON.parse(saved) : {};
   });
   const [expandedTask, setExpandedTask] = useState(null);
@@ -81,7 +82,9 @@ export default function ChallengeChecklist({ activeTab = "all", onProgressUpdate
             _date: todayStr,
           }
         };
-        localStorage.setItem("challenge15", JSON.stringify(updated));
+        // ✅ FIXED: challenge13 use karo
+        localStorage.setItem("challenge13", JSON.stringify(updated));
+        window.dispatchEvent(new Event('challenge13Updated'));
         return updated;
       });
     }
@@ -100,7 +103,9 @@ export default function ChallengeChecklist({ activeTab = "all", onProgressUpdate
           [taskId]: !(prev[todayStr]?.[taskId] || false)
         }
       };
-      localStorage.setItem("challenge15", JSON.stringify(updated));
+      // ✅ FIXED: challenge13 use karo
+      localStorage.setItem("challenge13", JSON.stringify(updated));
+      window.dispatchEvent(new Event('challenge13Updated'));
       return updated;
     });
   };
